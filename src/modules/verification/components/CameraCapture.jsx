@@ -23,6 +23,19 @@ export default function CameraCapture({ onCapture, onError, isProcessing }) {
   // Start camera stream
   const startCamera = useCallback(async () => {
     try {
+      // Check if running in browser
+      if (typeof window === 'undefined') {
+        console.error('Not running in browser environment');
+        return;
+      }
+
+      // Check if mediaDevices API is available
+      if (!navigator?.mediaDevices?.getUserMedia) {
+        setHasPermission(false);
+        onError?.('Camera access is not supported in this browser or context. Please use HTTPS or a modern browser.');
+        return;
+      }
+
       // Stop any existing stream
       if (streamRef.current) {
         streamRef.current.getTracks().forEach(track => track.stop());

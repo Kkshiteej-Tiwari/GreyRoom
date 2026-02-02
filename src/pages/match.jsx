@@ -5,6 +5,7 @@ import { motion } from 'framer-motion';
 import { appConfig } from 'config/config';
 import { getUserData, getRemainingMatches, incrementMatchCount } from 'utils/deviceId';
 import { isUserVerified, getVerifiedGender } from 'modules/verification';
+import MiniGames from 'components/MiniGames';
 
 export default function MatchPage() {
   const { socket, isConnected } = useSocket();
@@ -200,26 +201,31 @@ export default function MatchPage() {
 
           {/* Searching State */}
           {status === 'searching' && (
-            <div className="bg-grey-50 rounded-2xl p-8 shadow-sm text-center">
-              <div className="mb-6">
-                <div className="w-16 h-16 mx-auto mb-4 relative">
-                  <div className="absolute inset-0 border-4 border-grey-200 rounded-full"></div>
-                  <div className="absolute inset-0 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
+            <div className="space-y-4">
+              <div className="bg-grey-50 rounded-2xl p-8 shadow-sm text-center">
+                <div className="mb-6">
+                  <div className="w-16 h-16 mx-auto mb-4 relative">
+                    <div className="absolute inset-0 border-4 border-grey-200 rounded-full"></div>
+                    <div className="absolute inset-0 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
+                  </div>
+                  <h2 className="text-xl font-semibold text-grey-800 mb-2">
+                    Looking for a stranger...
+                  </h2>
+                  <p className="text-grey-500 text-sm">
+                    {queuePosition ? `Position in queue: ${queuePosition}` : 'Please wait'}
+                  </p>
                 </div>
-                <h2 className="text-xl font-semibold text-grey-800 mb-2">
-                  Looking for a stranger...
-                </h2>
-                <p className="text-grey-500 text-sm">
-                  {queuePosition ? `Position in queue: ${queuePosition}` : 'Please wait'}
-                </p>
+
+                <button
+                  onClick={handleCancelSearch}
+                  className="bg-grey-200 hover:bg-grey-300 text-grey-700 font-medium py-3 px-6 rounded-xl transition-colors"
+                >
+                  Cancel
+                </button>
               </div>
 
-              <button
-                onClick={handleCancelSearch}
-                className="bg-grey-200 hover:bg-grey-300 text-grey-700 font-medium py-3 px-6 rounded-xl transition-colors"
-              >
-                Cancel
-              </button>
+              {/* Mini Games while waiting */}
+              <MiniGames />
             </div>
           )}
 
