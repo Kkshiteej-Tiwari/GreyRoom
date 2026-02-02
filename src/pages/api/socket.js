@@ -54,9 +54,11 @@ export default async function handler(req, res) {
         });
       }
 
-      // Check for duplicate nicknames
+      // Check for duplicate nicknames (but allow same deviceId to re-register)
       const existingUser = Array.from(connectedUsers.values()).find(
-        (u) => u.nickname.toLowerCase() === nickname.toLowerCase() && u.socketId !== socket.id
+        (u) => u.nickname.toLowerCase() === nickname.toLowerCase() && 
+               u.socketId !== socket.id && 
+               u.deviceId !== deviceId
       );
 
       if (existingUser) {
@@ -64,6 +66,13 @@ export default async function handler(req, res) {
           success: false, 
           error: "This nickname is already in use" 
         });
+      }
+
+      // Clean up old sessions from the same deviceId
+      for (const [socketId, user] of connectedUsers.entries()) {
+        if (user.deviceId === deviceId && socketId !== socket.id) {
+          connectedUsers.delete(socketId);
+        }
       }
 
       const userData = {
