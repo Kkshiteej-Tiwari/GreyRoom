@@ -1,24 +1,27 @@
 import { useSocket } from 'context/SocketContext';
 import { useRouter } from 'next/router';
 import { useEffect, useState } from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { appConfig } from 'config/config';
 import { getDeviceId, saveUserData, getUserData } from 'utils/deviceId';
 import { isUserVerified } from 'modules/verification';
+import LandingPage from 'components/landing/LandingPage';
 
 export default function Home() {
   const { socket, isConnected } = useSocket();
   const router = useRouter();
   
+  const [showLanding, setShowLanding] = useState(true);
   const [step, setStep] = useState('welcome'); // welcome, nickname, bio
   const [nickname, setNickname] = useState('');
   const [bio, setBio] = useState('');
   const [error, setError] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [hasClickedGetStarted, setHasClickedGetStarted] = useState(false);
 
-  // Check for existing session
+  // Check for existing session ONLY after user clicks Get Started
   useEffect(() => {
-    if (!socket || !isConnected) return;
+    if (!socket || !isConnected || !hasClickedGetStarted) return;
     
     const existingUser = getUserData();
     if (existingUser) {
@@ -44,7 +47,21 @@ export default function Home() {
       socket.on('auth:register', handleRegister);
       return () => socket.off('auth:register', handleRegister);
     }
-  }, [socket, isConnected]);
+  }, [socket, isConnected, hasClickedGetStarted]);
+
+  const handleGetStarted = () => {
+    setHasClickedGetStarted(true);
+    setShowLanding(false);
+  };
+
+  const handleBackToLanding = () => {
+    setShowLanding(true);
+    setHasClickedGetStarted(false);
+    setStep('welcome');
+    setNickname('');
+    setBio('');
+    setError(null);
+  };
 
   const handleStart = () => {
     setStep('nickname');
@@ -107,167 +124,463 @@ export default function Home() {
     });
   };
 
+  // Show landing page first
+  if (showLanding) {
+    return <LandingPage onGetStarted={handleGetStarted} />;
+  }
+
   return (
-    <div className="min-h-screen bg-white flex flex-col items-center justify-center p-4">
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
-        className="w-full max-w-md"
-      >
-        {/* Logo */}
-        <div className="text-center mb-8">
-          <img 
-            src="/logo.jpeg" 
-            alt="Greyroom" 
-            className="w-20 h-20 mx-auto mb-4 rounded-2xl shadow-lg"
-          />
-          <h1 className="text-3xl font-bold text-grey-800">{appConfig.name}</h1>
-          <p className="text-grey-500 mt-2">{appConfig.tagline}</p>
+    <div className="min-h-screen bg-white relative overflow-hidden">
+      {/* Animated Background Gradients */}
+      <motion.div 
+        className="absolute top-[-20%] left-[-10%] w-[500px] h-[500px] bg-accent-green/30 rounded-full blur-3xl"
+        animate={{ 
+          scale: [1, 1.2, 1],
+          x: [0, 50, 0],
+          opacity: [0.3, 0.5, 0.3]
+        }}
+        transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }}
+      />
+      <motion.div 
+        className="absolute bottom-[-20%] right-[-10%] w-[600px] h-[600px] bg-accent-blue/30 rounded-full blur-3xl"
+        animate={{ 
+          scale: [1.2, 1, 1.2],
+          y: [0, -50, 0],
+          opacity: [0.4, 0.6, 0.4]
+        }}
+        transition={{ duration: 10, repeat: Infinity, ease: "easeInOut" }}
+      />
+      <motion.div 
+        className="absolute top-[40%] right-[20%] w-[300px] h-[300px] bg-accent-green/20 rounded-full blur-3xl"
+        animate={{ 
+          scale: [1, 1.3, 1],
+          opacity: [0.2, 0.4, 0.2]
+        }}
+        transition={{ duration: 6, repeat: Infinity, ease: "easeInOut", delay: 2 }}
+      />
+
+      {/* Left Side - Floating Feature Tags */}
+      <div className="hidden lg:block absolute left-8 xl:left-16 top-1/2 -translate-y-1/2 z-10">
+        <div className="space-y-4">
+          {[
+            { icon: '🔒', text: 'Secure', delay: 0 },
+            { icon: '🌍', text: 'Global', delay: 0.2 },
+            { icon: '⚡', text: 'Real-time', delay: 0.4 },
+          ].map((tag, i) => (
+            <motion.div
+              key={i}
+              className="glass px-4 py-3 rounded-card flex items-center gap-2 shadow-soft"
+              initial={{ opacity: 0, x: -30 }}
+              animate={{ opacity: 1, x: 0, y: [0, -8, 0] }}
+              transition={{ 
+                opacity: { delay: 0.5 + tag.delay, duration: 0.5 },
+                x: { delay: 0.5 + tag.delay, duration: 0.5 },
+                y: { delay: 1 + tag.delay, duration: 3, repeat: Infinity, ease: "easeInOut" }
+              }}
+            >
+              <span className="text-xl">{tag.icon}</span>
+              <span className="text-text-primary font-medium text-sm">{tag.text}</span>
+            </motion.div>
+          ))}
+        </div>
+        
+        {/* Testimonial bubble */}
+        <motion.div
+          className="glass px-5 py-4 rounded-mobile mt-8 max-w-[200px] shadow-soft"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 1 }}
+        >
+          <div className="flex items-center gap-2 mb-2">
+            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-accent-green to-accent-blue flex items-center justify-center text-white text-sm">
+              A
+            </div>
+            <div>
+              <p className="text-text-primary text-xs font-medium">Alex</p>
+              <div className="flex text-yellow-500 text-xs">★★★★★</div>
+            </div>
+          </div>
+          <p className="text-text-muted text-xs italic">"Love the anonymity!"</p>
+        </motion.div>
+      </div>
+
+      {/* Right Side - Floating Mobile Card & Tags */}
+      <div className="hidden lg:block absolute right-8 xl:right-16 top-1/2 -translate-y-1/2 z-10">
+        {/* Mobile phone mockup */}
+        <motion.div
+          className="relative w-[180px] h-[360px] rounded-[36px] bg-panel border-2 border-grey-200 shadow-elevated overflow-hidden"
+          initial={{ opacity: 0, x: 30, rotate: 5 }}
+          animate={{ opacity: 1, x: 0, rotate: 5, y: [0, -10, 0] }}
+          transition={{ 
+            opacity: { delay: 0.3, duration: 0.6 },
+            x: { delay: 0.3, duration: 0.6 },
+            y: { duration: 4, repeat: Infinity, ease: "easeInOut" }
+          }}
+        >
+          {/* Phone screen content */}
+          <div className="absolute inset-2 rounded-[28px] bg-gradient-to-br from-accent-green/40 to-accent-blue/40 flex items-center justify-center">
+            <motion.div
+              className="w-16 h-16 rounded-full bg-white/70 backdrop-blur-sm flex items-center justify-center shadow-soft"
+              animate={{ scale: [1, 1.1, 1] }}
+              transition={{ duration: 2, repeat: Infinity }}
+            >
+              <svg className="w-8 h-8 text-grey-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+              </svg>
+            </motion.div>
+          </div>
+          {/* Bottom pill */}
+          <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-cta text-white text-xs px-4 py-2 rounded-full shadow-cta">
+            Say Hello 👋
+          </div>
+        </motion.div>
+
+        {/* Feature tags */}
+        <div className="mt-6 space-y-3">
+          {[
+            { icon: '💬', text: 'Video Chat', delay: 0.6 },
+            { icon: '🎭', text: 'Anonymous', delay: 0.8 },
+          ].map((tag, i) => (
+            <motion.div
+              key={i}
+              className="glass px-4 py-3 rounded-card flex items-center gap-2 shadow-soft"
+              initial={{ opacity: 0, x: 30 }}
+              animate={{ opacity: 1, x: 0, y: [0, 8, 0] }}
+              transition={{ 
+                opacity: { delay: 0.5 + tag.delay, duration: 0.5 },
+                x: { delay: 0.5 + tag.delay, duration: 0.5 },
+                y: { delay: 1 + tag.delay, duration: 3.5, repeat: Infinity, ease: "easeInOut" }
+              }}
+            >
+              <span className="text-xl">{tag.icon}</span>
+              <span className="text-text-primary font-medium text-sm">{tag.text}</span>
+            </motion.div>
+          ))}
         </div>
 
-        {/* Welcome Step */}
-        {step === 'welcome' && (
-          <motion.div
+        {/* Connection count */}
+        <motion.div
+          className="glass px-5 py-4 rounded-mobile mt-4 text-center shadow-soft"
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ delay: 1.2 }}
+        >
+          <motion.p 
+            className="text-2xl font-bold text-text-primary"
+            animate={{ scale: [1, 1.05, 1] }}
+            transition={{ duration: 2, repeat: Infinity }}
+          >
+            1M+
+          </motion.p>
+          <p className="text-text-muted text-xs">Connections</p>
+        </motion.div>
+      </div>
+
+      {/* Main Content */}
+      <div className="relative z-10 min-h-screen flex flex-col items-center justify-center p-6">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, ease: [0.2, 1, 0.3, 1] }}
+          className="w-full max-w-md"
+        >
+          {/* Logo & Branding */}
+          <motion.div 
+            className="text-center mb-8"
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.5, delay: 0.1 }}
+          >
+            <motion.div
+              whileHover={{ scale: 1.05, rotate: [0, -5, 5, 0] }}
+              transition={{ duration: 0.3 }}
+            >
+              <img 
+                src="/logo.jpeg" 
+                alt="Greyroom" 
+                className="w-20 h-20 mx-auto mb-4 rounded-2xl shadow-soft"
+              />
+            </motion.div>
+            <h1 className="text-3xl font-bold text-text-primary">{appConfig.name}</h1>
+            <p className="text-text-muted mt-2">{appConfig.tagline}</p>
+          </motion.div>
+
+          {/* Step Indicator */}
+          <div className="flex justify-center gap-2 mb-6">
+            {['welcome', 'nickname', 'bio'].map((s, i) => (
+              <motion.div
+                key={s}
+                className={`h-2 rounded-full transition-all duration-300 ${
+                  step === s ? 'w-8 bg-cta' : 
+                  ['welcome', 'nickname', 'bio'].indexOf(step) > i ? 'w-2 bg-accent-green' : 'w-2 bg-grey-200'
+                }`}
+                animate={{ scale: step === s ? [1, 1.1, 1] : 1 }}
+                transition={{ duration: 0.3 }}
+              />
+            ))}
+          </div>
+
+          {/* Steps */}
+          <AnimatePresence mode="wait">
+            {step === 'welcome' && (
+              <motion.div
+                key="welcome"
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -20 }}
+                transition={{ duration: 0.4, ease: [0.2, 1, 0.3, 1] }}
+                className="glass rounded-mobile p-8"
+              >
+                <div className="text-center mb-6">
+                  <motion.div
+                    className="w-16 h-16 mx-auto mb-4 rounded-full icon-gradient flex items-center justify-center"
+                    animate={{ scale: [1, 1.05, 1] }}
+                    transition={{ duration: 2, repeat: Infinity }}
+                  >
+                    <svg className="w-8 h-8 text-grey-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                    </svg>
+                  </motion.div>
+                  <h2 className="text-2xl font-semibold text-text-primary mb-2">
+                    Welcome to GreyRoom
+                  </h2>
+                  <p className="text-text-muted">
+                    Connect with strangers anonymously and safely
+                  </p>
+                </div>
+
+                <div className="space-y-3 mb-8">
+                  {[
+                    { icon: '🔒', text: 'Anonymous identity - no personal info needed' },
+                    { icon: '💬', text: 'Real-time 1-on-1 video chat' },
+                    { icon: '✨', text: 'Ephemeral messages - nothing is stored' },
+                  ].map((item, i) => (
+                    <motion.div
+                      key={i}
+                      className="flex items-center gap-3 p-3 bg-surface rounded-card"
+                      initial={{ opacity: 0, x: -20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: 0.2 + i * 0.1 }}
+                      whileHover={{ x: 5, backgroundColor: '#E9FFE9' }}
+                    >
+                      <span className="text-xl">{item.icon}</span>
+                      <span className="text-text-primary text-sm">{item.text}</span>
+                    </motion.div>
+                  ))}
+                </div>
+
+                <div className="flex gap-3">
+                  <motion.button
+                    type="button"
+                    onClick={handleBackToLanding}
+                    className="flex-1 bg-surface hover:bg-grey-200 text-text-primary font-medium py-3.5 px-6 rounded-pill transition-all"
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                  >
+                    ← Back
+                  </motion.button>
+                  <motion.button
+                    onClick={handleStart}
+                    className="flex-1 bg-cta text-white font-medium py-3.5 px-6 rounded-pill shadow-cta"
+                    whileHover={{ scale: 1.02, y: -2 }}
+                    whileTap={{ scale: 0.98 }}
+                  >
+                    Continue →
+                  </motion.button>
+                </div>
+              </motion.div>
+            )}
+
+            {step === 'nickname' && (
+              <motion.div
+                key="nickname"
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -20 }}
+                transition={{ duration: 0.4, ease: [0.2, 1, 0.3, 1] }}
+                className="glass rounded-mobile p-8"
+              >
+                <div className="text-center mb-6">
+                  <motion.div
+                    className="w-16 h-16 mx-auto mb-4 rounded-full icon-gradient flex items-center justify-center"
+                    animate={{ rotate: [0, 5, -5, 0] }}
+                    transition={{ duration: 3, repeat: Infinity }}
+                  >
+                    <svg className="w-8 h-8 text-grey-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                    </svg>
+                  </motion.div>
+                  <h2 className="text-2xl font-semibold text-text-primary mb-2">
+                    Choose a Nickname
+                  </h2>
+                  <p className="text-text-muted text-sm">
+                    This is how others will see you
+                  </p>
+                </div>
+
+                {error && (
+                  <motion.div 
+                    className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-card mb-4 text-sm flex items-center gap-2"
+                    initial={{ opacity: 0, y: -10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                  >
+                    <span>⚠️</span>
+                    {error}
+                  </motion.div>
+                )}
+
+                <form onSubmit={handleNicknameSubmit}>
+                  <motion.div
+                    className="relative mb-6"
+                    whileFocus={{ scale: 1.01 }}
+                  >
+                    <input
+                      type="text"
+                      value={nickname}
+                      onChange={(e) => setNickname(e.target.value)}
+                      placeholder="Enter nickname..."
+                      maxLength={20}
+                      className="w-full bg-surface border-2 border-transparent rounded-card px-5 py-4 text-text-primary placeholder-text-muted focus:outline-none focus:border-accent-green focus:bg-white transition-all text-lg"
+                      autoFocus
+                    />
+                    <span className="absolute right-4 top-1/2 -translate-y-1/2 text-text-muted text-sm">
+                      {nickname.length}/20
+                    </span>
+                  </motion.div>
+                  
+                  <div className="flex gap-3">
+                    <motion.button
+                      type="button"
+                      onClick={() => setStep('welcome')}
+                      className="flex-1 bg-surface hover:bg-grey-200 text-text-primary font-medium py-3.5 px-6 rounded-pill transition-all"
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                    >
+                      ← Back
+                    </motion.button>
+                    <motion.button
+                      type="submit"
+                      className="flex-1 bg-cta text-white font-medium py-3.5 px-6 rounded-pill shadow-cta"
+                      whileHover={{ scale: 1.02, y: -2 }}
+                      whileTap={{ scale: 0.98 }}
+                    >
+                      Next →
+                    </motion.button>
+                  </div>
+                </form>
+              </motion.div>
+            )}
+
+            {step === 'bio' && (
+              <motion.div
+                key="bio"
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -20 }}
+                transition={{ duration: 0.4, ease: [0.2, 1, 0.3, 1] }}
+                className="glass rounded-mobile p-8"
+              >
+                <div className="text-center mb-6">
+                  <motion.div
+                    className="w-16 h-16 mx-auto mb-4 rounded-full icon-gradient flex items-center justify-center"
+                    animate={{ y: [0, -5, 0] }}
+                    transition={{ duration: 2, repeat: Infinity }}
+                  >
+                    <svg className="w-8 h-8 text-grey-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                    </svg>
+                  </motion.div>
+                  <h2 className="text-2xl font-semibold text-text-primary mb-2">
+                    Add a Short Bio
+                  </h2>
+                  <p className="text-text-muted text-sm">
+                    Optional - tell others about yourself
+                  </p>
+                </div>
+
+                {error && (
+                  <motion.div 
+                    className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-card mb-4 text-sm flex items-center gap-2"
+                    initial={{ opacity: 0, y: -10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                  >
+                    <span>⚠️</span>
+                    {error}
+                  </motion.div>
+                )}
+
+                <form onSubmit={handleBioSubmit}>
+                  <motion.div className="relative mb-6">
+                    <textarea
+                      value={bio}
+                      onChange={(e) => setBio(e.target.value)}
+                      placeholder="A few words about yourself..."
+                      maxLength={100}
+                      rows={3}
+                      className="w-full bg-surface border-2 border-transparent rounded-card px-5 py-4 text-text-primary placeholder-text-muted focus:outline-none focus:border-accent-green focus:bg-white transition-all text-lg resize-none"
+                    />
+                    <span className="absolute right-4 bottom-4 text-text-muted text-sm">
+                      {bio.length}/100
+                    </span>
+                  </motion.div>
+                  
+                  <div className="flex gap-3">
+                    <motion.button
+                      type="button"
+                      onClick={() => setStep('nickname')}
+                      className="flex-1 bg-surface hover:bg-grey-200 text-text-primary font-medium py-3.5 px-6 rounded-pill transition-all"
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                    >
+                      ← Back
+                    </motion.button>
+                    <motion.button
+                      type="submit"
+                      disabled={isLoading}
+                      className="flex-1 bg-cta text-white font-medium py-3.5 px-6 rounded-pill shadow-cta disabled:opacity-50 flex items-center justify-center gap-2"
+                      whileHover={{ scale: isLoading ? 1 : 1.02, y: isLoading ? 0 : -2 }}
+                      whileTap={{ scale: isLoading ? 1 : 0.98 }}
+                    >
+                      {isLoading ? (
+                        <>
+                          <motion.div 
+                            className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full"
+                            animate={{ rotate: 360 }}
+                            transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                          />
+                          Loading...
+                        </>
+                      ) : (
+                        <>Start Chatting 🚀</>
+                      )}
+                    </motion.button>
+                  </div>
+                </form>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          {/* Connection Status */}
+          <motion.div 
+            className="text-center mt-6"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            className="bg-grey-50 rounded-2xl p-8 shadow-sm"
+            transition={{ delay: 0.5 }}
           >
-            <h2 className="text-xl font-semibold text-grey-800 text-center mb-4">
-              Welcome to Greyroom
-            </h2>
-            <p className="text-grey-600 text-center mb-6">
-              Connect with strangers anonymously and safely. No email or phone required.
-            </p>
-            <ul className="text-grey-600 text-sm space-y-2 mb-6">
-              <li className="flex items-center">
-                <span className="w-2 h-2 bg-primary rounded-full mr-3"></span>
-                Anonymous identity - no personal info needed
-              </li>
-              <li className="flex items-center">
-                <span className="w-2 h-2 bg-primary rounded-full mr-3"></span>
-                Real-time 1-on-1 chat with strangers
-              </li>
-              <li className="flex items-center">
-                <span className="w-2 h-2 bg-primary rounded-full mr-3"></span>
-                Ephemeral messages - nothing is stored
-              </li>
-            </ul>
-            <button
-              onClick={handleStart}
-              className="w-full bg-primary hover:bg-primary-dark text-white font-medium py-3 px-6 rounded-xl transition-colors"
-            >
-              Get Started
-            </button>
-          </motion.div>
-        )}
-
-        {/* Nickname Step */}
-        {step === 'nickname' && (
-          <motion.div
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            className="bg-grey-50 rounded-2xl p-8 shadow-sm"
-          >
-            <h2 className="text-xl font-semibold text-grey-800 text-center mb-2">
-              Choose a Nickname
-            </h2>
-            <p className="text-grey-500 text-center mb-6 text-sm">
-              This is how others will see you
-            </p>
-
-            {error && (
-              <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-xl mb-4 text-sm">
-                {error}
-              </div>
-            )}
-
-            <form onSubmit={handleNicknameSubmit}>
-              <input
-                type="text"
-                value={nickname}
-                onChange={(e) => setNickname(e.target.value)}
-                placeholder="Enter nickname..."
-                maxLength={20}
-                className="w-full bg-white border border-grey-200 rounded-xl px-4 py-3 text-grey-800 placeholder-grey-400 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent mb-4"
-                autoFocus
+            <span className={`inline-flex items-center text-sm px-4 py-2 rounded-full ${
+              isConnected ? 'bg-accent-green/50 text-green-700' : 'bg-grey-100 text-grey-400'
+            }`}>
+              <motion.span 
+                className={`w-2 h-2 rounded-full mr-2 ${isConnected ? 'bg-green-500' : 'bg-grey-300'}`}
+                animate={isConnected ? { scale: [1, 1.2, 1] } : {}}
+                transition={{ duration: 1.5, repeat: Infinity }}
               />
-              <div className="flex gap-3">
-                <button
-                  type="button"
-                  onClick={() => setStep('welcome')}
-                  className="flex-1 bg-grey-200 hover:bg-grey-300 text-grey-700 font-medium py-3 px-6 rounded-xl transition-colors"
-                >
-                  Back
-                </button>
-                <button
-                  type="submit"
-                  className="flex-1 bg-primary hover:bg-primary-dark text-white font-medium py-3 px-6 rounded-xl transition-colors"
-                >
-                  Next
-                </button>
-              </div>
-            </form>
+              {isConnected ? 'Connected to server' : 'Connecting...'}
+            </span>
           </motion.div>
-        )}
-
-        {/* Bio Step */}
-        {step === 'bio' && (
-          <motion.div
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            className="bg-grey-50 rounded-2xl p-8 shadow-sm"
-          >
-            <h2 className="text-xl font-semibold text-grey-800 text-center mb-2">
-              Add a Short Bio
-            </h2>
-            <p className="text-grey-500 text-center mb-6 text-sm">
-              Optional - tell others a bit about yourself
-            </p>
-
-            {error && (
-              <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-xl mb-4 text-sm">
-                {error}
-              </div>
-            )}
-
-            <form onSubmit={handleBioSubmit}>
-              <textarea
-                value={bio}
-                onChange={(e) => setBio(e.target.value)}
-                placeholder="A few words about yourself... (optional)"
-                maxLength={100}
-                rows={3}
-                className="w-full bg-white border border-grey-200 rounded-xl px-4 py-3 text-grey-800 placeholder-grey-400 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent mb-4 resize-none"
-              />
-              <div className="flex gap-3">
-                <button
-                  type="button"
-                  onClick={() => setStep('nickname')}
-                  className="flex-1 bg-grey-200 hover:bg-grey-300 text-grey-700 font-medium py-3 px-6 rounded-xl transition-colors"
-                >
-                  Back
-                </button>
-                <button
-                  type="submit"
-                  disabled={isLoading}
-                  className="flex-1 bg-primary hover:bg-primary-dark text-white font-medium py-3 px-6 rounded-xl transition-colors disabled:opacity-50"
-                >
-                  {isLoading ? 'Loading...' : 'Start Chatting'}
-                </button>
-              </div>
-            </form>
-          </motion.div>
-        )}
-
-        {/* Connection Status */}
-        <div className="text-center mt-6">
-          <span className={`inline-flex items-center text-sm ${isConnected ? 'text-green-600' : 'text-grey-400'}`}>
-            <span className={`w-2 h-2 rounded-full mr-2 ${isConnected ? 'bg-green-500' : 'bg-grey-300'}`}></span>
-            {isConnected ? 'Connected' : 'Connecting...'}
-          </span>
-        </div>
-      </motion.div>
+        </motion.div>
+      </div>
     </div>
   );
 }
+

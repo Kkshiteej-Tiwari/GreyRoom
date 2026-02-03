@@ -4,6 +4,22 @@
 @tailwind components;
 @tailwind utilities;
 
+:root {
+  --bg: #FFFFFF;
+  --surface: #F6F7F7;
+  --panel-accent: #F2F6F5;
+  --text-primary: #0B0C0D;
+  --text-muted: #7A7E80;
+  --cta-bg: #0B0C0D;
+  --cta-text: #FFFFFF;
+  --accent-green: #DFF8D6;
+  --accent-blue: #D6F0FF;
+  --shadow-soft: 0 18px 36px rgba(11, 16, 20, 0.06);
+  --shadow-sm: 0 8px 20px rgba(11, 16, 20, 0.04);
+  --radius-lg: 36px;
+  --radius-md: 18px;
+}
+
 * {
   font-family: 'Inter', sans-serif;
   box-sizing: border-box;
@@ -32,6 +48,108 @@ body {
 
 ::-webkit-scrollbar-thumb:hover {
   background: #9ca3af;
+}
+
+/* Glassmorphism utilities */
+.glass {
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.05);
+}
+
+.glass-nav {
+  background: rgba(255, 255, 255, 0);
+  backdrop-filter: blur(0);
+  transition: all 0.3s cubic-bezier(0.2, 1, 0.3, 1);
+}
+
+.glass-nav.scrolled {
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
+}
+
+/* Highlight text with gradient background */
+.highlight-text {
+  display: inline-block;
+  background: linear-gradient(90deg, var(--accent-green) 0%, var(--accent-blue) 100%);
+  padding: 4px 16px;
+  border-radius: 18px;
+  transform: skewX(-1.5deg);
+}
+
+/* Mobile card styling */
+.mobile-card {
+  width: 260px;
+  height: 480px;
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  background: var(--panel-accent);
+  box-shadow: var(--shadow-soft);
+  border: 1px solid rgba(11, 16, 20, 0.03);
+  position: relative;
+}
+
+.mobile-card:hover {
+  transform: scale(1.012);
+  box-shadow: 0 26px 56px rgba(11, 16, 20, 0.08);
+}
+
+/* Bottom pill CTA inside mobile cards */
+.bottom-pill {
+  position: absolute;
+  left: 16px;
+  right: 16px;
+  bottom: 18px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background: var(--cta-bg);
+  color: var(--cta-text);
+  border-radius: 22px;
+  font-weight: 600;
+  font-size: 15px;
+  box-shadow: 0 6px 18px rgba(11, 16, 20, 0.12);
+}
+
+/* Floating tag cards */
+.floating-tag {
+  width: 140px;
+  height: 56px;
+  border-radius: 12px;
+  background: #FFFFFF;
+  box-shadow: var(--shadow-sm);
+  display: flex;
+  align-items: center;
+  padding: 0 12px;
+  gap: 10px;
+}
+
+/* Marquee / Ticker */
+.marquee-container {
+  overflow: hidden;
+  width: 100%;
+}
+
+.marquee-content {
+  display: flex;
+  gap: 48px;
+  white-space: nowrap;
+}
+
+/* 3D perspective for word flip */
+.perspective {
+  perspective: 1000px;
+}
+
+.word-flip-item {
+  transform-style: preserve-3d;
+  backface-visibility: hidden;
 }
 
 /* Loading animation */
@@ -68,4 +186,28 @@ body {
   40% {
     transform: scale(1);
   }
+}
+
+/* Staggered animation helpers */
+.stagger-1 { animation-delay: 0ms; }
+.stagger-2 { animation-delay: 100ms; }
+.stagger-3 { animation-delay: 200ms; }
+.stagger-4 { animation-delay: 300ms; }
+.stagger-5 { animation-delay: 400ms; }
+
+/* Premium button hover */
+.btn-premium {
+  transition: all 0.16s cubic-bezier(0.2, 1, 0.3, 1);
+}
+
+.btn-premium:hover {
+  transform: translateY(-3px);
+  filter: brightness(1.04);
+}
+
+/* Icon gradient background */
+.icon-gradient {
+  background: linear-gradient(180deg, #E9FFE9, #E6F6FF);
+  border-radius: 50%;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.06);
 }
