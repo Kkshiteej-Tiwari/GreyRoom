@@ -2,6 +2,10 @@
   "name": "greyroom",
   "version": "1.0.0",
   "private": true,
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=8.0.0"
+  },
   "scripts": {
     "dev": "next dev",
     "build": "next build",
@@ -10,7 +14,6 @@
   },
   "dependencies": {
     "@headlessui/react": "^2.2.0",
-    "@next/swc-win32-x64-msvc": "^16.1.6",
     "@vladmandic/face-api": "^1.7.15",
     "clsx": "^2.1.1",
     "framer-motion": "^12.4.7",
