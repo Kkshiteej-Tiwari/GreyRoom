@@ -1,3 +1,47 @@
+/**
+ * ============================================================================
+ * HOME PAGE - index.jsx
+ * ============================================================================
+ * 
+ * PURPOSE:
+ * The main entry point for GreyRoom. This page handles:
+ * 1. Landing page display with features and statistics
+ * 2. User onboarding flow (nickname → bio → verification → match)
+ * 3. Returning user session restoration
+ * 
+ * USER FLOW:
+ * ┌─────────────────────────────────────────────────────────────────────────┐
+ * │  Landing Page (showLanding=true)                                        │
+ * │       ↓ "Get Started" click                                             │
+ * │  Welcome Screen (step='welcome')                                        │
+ * │       ↓ "Continue" click                                                │
+ * │  Nickname Input (step='nickname')                                       │
+ * │       ↓ Submit nickname                                                 │
+ * │  Bio Input (step='bio')                                                 │
+ * │       ↓ Submit bio                                                      │
+ * │  Registration with Socket Server                                        │
+ * │       ↓ Success                                                         │
+ * │  Redirect to /verify (gender verification)                              │
+ * └─────────────────────────────────────────────────────────────────────────┘
+ * 
+ * RETURNING USERS:
+ * - If user data exists in localStorage, they're automatically re-registered
+ * - Redirects to /verify if not verified, or /match if verified
+ * 
+ * STATE:
+ * - showLanding: Whether to show the landing page
+ * - step: Current setup step ('welcome' | 'nickname' | 'bio')
+ * - nickname: User's chosen display name
+ * - bio: User's optional bio text
+ * - hasClickedGetStarted: Prevents auto-redirect until user engages
+ * 
+ * SOCKET EVENTS:
+ * - Emits: auth:register
+ * - Listens: auth:register (for response)
+ * 
+ * ============================================================================
+ */
+
 import { useSocket } from 'context/SocketContext';
 import { useRouter } from 'next/router';
 import { useEffect, useState } from 'react';
@@ -8,19 +52,38 @@ import { isUserVerified } from 'modules/verification';
 import LandingPage from 'components/landing/LandingPage';
 
 export default function Home() {
+  // ========================================================================
+  // HOOKS & STATE
+  // ========================================================================
+  
   const { socket, isConnected } = useSocket();
   const router = useRouter();
   
-  const [showLanding, setShowLanding] = useState(true);
-  const [step, setStep] = useState('welcome'); // welcome, nickname, bio
+  // UI state
+  const [showLanding, setShowLanding] = useState(true);  // Show landing vs setup
+  const [step, setStep] = useState('welcome');            // Setup wizard step
+  
+  // Form state
   const [nickname, setNickname] = useState('');
   const [bio, setBio] = useState('');
+  
+  // Status state
   const [error, setError] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
+  
+  // Prevents auto-redirect until user clicks "Get Started"
   const [hasClickedGetStarted, setHasClickedGetStarted] = useState(false);
 
-  // Check for existing session ONLY after user clicks Get Started
+  // ========================================================================
+  // RETURNING USER HANDLING
+  // ========================================================================
+
+  /**
+   * Effect: Check for existing session ONLY after user clicks Get Started
+   * This prevents unexpected redirects when users just visit the landing page.
+   */
   useEffect(() => {
+    // Only check for existing session after user engagement
     if (!socket || !isConnected || !hasClickedGetStarted) return;
     
     const existingUser = getUserData();
@@ -33,13 +96,14 @@ export default function Home() {
         gender: existingUser.gender,
       });
 
+      // Handle registration response
       const handleRegister = (response) => {
         if (response.success) {
-          // Check if user needs verification
+          // Route based on verification status
           if (!isUserVerified()) {
-            router.push('/verify');
+            router.push('/verify');  // Needs gender verification
           } else {
-            router.push('/match');
+            router.push('/match');   // Ready to match
           }
         }
       };
@@ -49,11 +113,23 @@ export default function Home() {
     }
   }, [socket, isConnected, hasClickedGetStarted]);
 
+  // ========================================================================
+  // EVENT HANDLERS
+  // ========================================================================
+
+  /**
+   * Handles "Get Started" button click from landing page.
+   * Hides landing page and shows setup wizard.
+   */
   const handleGetStarted = () => {
     setHasClickedGetStarted(true);
     setShowLanding(false);
   };
 
+  /**
+   * Handles back navigation to landing page.
+   * Resets all setup state.
+   */
   const handleBackToLanding = () => {
     setShowLanding(true);
     setHasClickedGetStarted(false);
@@ -63,18 +139,27 @@ export default function Home() {
     setError(null);
   };
 
+  /**
+   * Advances from welcome screen to nickname input.
+   */
   const handleStart = () => {
     setStep('nickname');
   };
 
+  /**
+   * Validates and submits the nickname.
+   * Advances to bio input if valid.
+   */
   const handleNicknameSubmit = (e) => {
     e.preventDefault();
     
+    // Validation: required field
     if (!nickname.trim()) {
       setError('Please enter a nickname');
       return;
     }
     
+    // Validation: length constraints
     if (nickname.length < 2 || nickname.length > 20) {
       setError('Nickname must be 2-20 characters');
       return;
@@ -163,9 +248,9 @@ export default function Home() {
       <div className="hidden lg:block absolute left-8 xl:left-16 top-1/2 -translate-y-1/2 z-10">
         <div className="space-y-4">
           {[
-            { icon: '🔒', text: 'Secure', delay: 0 },
-            { icon: '🌍', text: 'Global', delay: 0.2 },
-            { icon: '⚡', text: 'Real-time', delay: 0.4 },
+            { icon: (<svg className="w-5 h-5 text-violet-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg>), text: 'Secure', delay: 0 },
+            { icon: (<svg className="w-5 h-5 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>), text: 'Global', delay: 0.2 },
+            { icon: (<svg className="w-5 h-5 text-amber-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>), text: 'Real-time', delay: 0.4 },
           ].map((tag, i) => (
             <motion.div
               key={i}
@@ -178,7 +263,7 @@ export default function Home() {
                 y: { delay: 1 + tag.delay, duration: 3, repeat: Infinity, ease: "easeInOut" }
               }}
             >
-              <span className="text-xl">{tag.icon}</span>
+              {tag.icon}
               <span className="text-text-primary font-medium text-sm">{tag.text}</span>
             </motion.div>
           ))}
@@ -231,15 +316,15 @@ export default function Home() {
           </div>
           {/* Bottom pill */}
           <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-cta text-white text-xs px-4 py-2 rounded-full shadow-cta">
-            Say Hello 👋
+            Say Hello
           </div>
         </motion.div>
 
         {/* Feature tags */}
         <div className="mt-6 space-y-3">
           {[
-            { icon: '💬', text: 'Video Chat', delay: 0.6 },
-            { icon: '🎭', text: 'Anonymous', delay: 0.8 },
+            { icon: (<svg className="w-5 h-5 text-violet-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>), text: 'Video Chat', delay: 0.6 },
+            { icon: (<svg className="w-5 h-5 text-grey-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>), text: 'Anonymous', delay: 0.8 },
           ].map((tag, i) => (
             <motion.div
               key={i}
@@ -351,9 +436,9 @@ export default function Home() {
 
                 <div className="space-y-3 mb-8">
                   {[
-                    { icon: '🔒', text: 'Anonymous identity - no personal info needed' },
-                    { icon: '💬', text: 'Real-time 1-on-1 video chat' },
-                    { icon: '✨', text: 'Ephemeral messages - nothing is stored' },
+                    { icon: (<svg className="w-5 h-5 text-violet-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg>), text: 'Anonymous identity - no personal info needed' },
+                    { icon: (<svg className="w-5 h-5 text-violet-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>), text: 'Real-time 1-on-1 video chat' },
+                    { icon: (<svg className="w-5 h-5 text-violet-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>), text: 'Ephemeral messages - nothing is stored' },
                   ].map((item, i) => (
                     <motion.div
                       key={i}
@@ -363,7 +448,7 @@ export default function Home() {
                       transition={{ delay: 0.2 + i * 0.1 }}
                       whileHover={{ x: 5, backgroundColor: '#E9FFE9' }}
                     >
-                      <span className="text-xl">{item.icon}</span>
+                      {item.icon}
                       <span className="text-text-primary text-sm">{item.text}</span>
                     </motion.div>
                   ))}

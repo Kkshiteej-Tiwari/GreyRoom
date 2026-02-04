@@ -332,9 +332,21 @@ export default function LandingPage({ onGetStarted }) {
           <div className="grid lg:grid-cols-3 gap-8 mb-16">
             {/* Stats Cards */}
             {[
-              { number: '100K+', label: 'Active Users', icon: '👥' },
-              { number: '1M+', label: 'Connections Made', icon: '🔗' },
-              { number: '99.9%', label: 'Uptime', icon: '⚡' },
+              { number: '100K+', label: 'Active Users', icon: (
+                <svg className="w-8 h-8 text-violet-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                </svg>
+              )},
+              { number: '1M+', label: 'Connections Made', icon: (
+                <svg className="w-8 h-8 text-violet-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+                </svg>
+              )},
+              { number: '99.9%', label: 'Uptime', icon: (
+                <svg className="w-8 h-8 text-amber-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                </svg>
+              )},
             ].map((stat, index) => (
               <motion.div
                 key={index}
@@ -346,8 +358,8 @@ export default function LandingPage({ onGetStarted }) {
                 whileHover={{ y: -5, scale: 1.02 }}
               >
                 <motion.div 
-                  className="text-4xl mb-4"
-                  animate={{ scale: [1, 1.1, 1] }}
+                  className="flex justify-center mb-4"
+                  animate={{ scale: [1, 1.05, 1] }}
                   transition={{ duration: 2, repeat: Infinity, delay: index * 0.3 }}
                 >
                   {stat.icon}
@@ -392,14 +404,20 @@ export default function LandingPage({ onGetStarted }) {
                   whileInView={{ opacity: 1 }}
                   viewport={{ once: true }}
                 >
-                  {['🔒 Privacy First', '🌍 Global Community', '⚡ Real-time', '🤝 Human Verified'].map((item, i) => (
+                  {[
+                    { icon: (<svg className="w-4 h-4 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg>), label: 'Privacy First' },
+                    { icon: (<svg className="w-4 h-4 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>), label: 'Global Community' },
+                    { icon: (<svg className="w-4 h-4 text-amber-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>), label: 'Real-time' },
+                    { icon: (<svg className="w-4 h-4 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" /></svg>), label: 'Human Verified' },
+                  ].map((item, i) => (
                     <motion.div
                       key={i}
-                      className="bg-surface rounded-card p-4 text-center"
-                      whileHover={{ scale: 1.05, rotate: [-1, 1, 0] }}
+                      className="bg-surface rounded-card p-4 text-center flex items-center justify-center gap-2"
+                      whileHover={{ scale: 1.05 }}
                       transition={{ duration: 0.3 }}
                     >
-                      <span className="text-text-primary font-medium">{item}</span>
+                      {item.icon}
+                      <span className="text-text-primary font-medium">{item.label}</span>
                     </motion.div>
                   ))}
                 </motion.div>
@@ -427,24 +445,9 @@ export default function LandingPage({ onGetStarted }) {
             <p className="text-white/60 text-sm">
               © 2026 GreyRoom. Connect anonymously, securely.
             </p>
-            <div className="flex items-center gap-4">
-              <motion.div 
-                className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center cursor-pointer"
-                whileHover={{ scale: 1.1, backgroundColor: 'rgba(255,255,255,0.2)' }}
-              >
-                <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M24 4.557c-.883.392-1.832.656-2.828.775 1.017-.609 1.798-1.574 2.165-2.724-.951.564-2.005.974-3.127 1.195-.897-.957-2.178-1.555-3.594-1.555-3.179 0-5.515 2.966-4.797 6.045-4.091-.205-7.719-2.165-10.148-5.144-1.29 2.213-.669 5.108 1.523 6.574-.806-.026-1.566-.247-2.229-.616-.054 2.281 1.581 4.415 3.949 4.89-.693.188-1.452.232-2.224.084.626 1.956 2.444 3.379 4.6 3.419-2.07 1.623-4.678 2.348-7.29 2.04 2.179 1.397 4.768 2.212 7.548 2.212 9.142 0 14.307-7.721 13.995-14.646.962-.695 1.797-1.562 2.457-2.549z"/>
-                </svg>
-              </motion.div>
-              <motion.div 
-                className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center cursor-pointer"
-                whileHover={{ scale: 1.1, backgroundColor: 'rgba(255,255,255,0.2)' }}
-              >
-                <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/>
-                </svg>
-              </motion.div>
-            </div>
+            <p className="text-white/40 text-sm">
+              Built with privacy in mind
+            </p>
           </div>
         </div>
       </footer>

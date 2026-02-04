@@ -1,3 +1,40 @@
+/**
+ * ============================================================================
+ * MATCH PAGE - match.jsx
+ * ============================================================================
+ * 
+ * PURPOSE:
+ * The matching queue page where users wait to be paired with strangers.
+ * Users can select their gender filter preference and wait in the queue.
+ * 
+ * FEATURES:
+ * - Gender filter selection (Anyone/Male/Female)
+ * - Real-time queue position display
+ * - Live online user count
+ * - Interactive mini-games while waiting
+ * - Animated background and UI elements
+ * 
+ * USER FLOW:
+ * 1. User arrives from index.jsx after setup
+ * 2. User selects gender preference (limited daily for specific genders)
+ * 3. User clicks "Find Someone" to join queue
+ * 4. While waiting: shows queue position, online count, mini-games
+ * 5. On match found: automatically redirects to chat/[sessionId]
+ * 
+ * SOCKET EVENTS:
+ * - Emits: auth:register, platform:stats, queue:join, queue:leave, auth:logout
+ * - Listens: platform:stats, match:found, queue:status
+ * 
+ * STATE:
+ * - status: 'idle' | 'searching' | 'matched' - Current matching state
+ * - genderFilter: 'any' | 'male' | 'female' - Selected preference
+ * - queuePosition: Position in queue
+ * - onlineCount: Total users online
+ * - isVerified: Whether user completed gender verification
+ * 
+ * ============================================================================
+ */
+
 import { useSocket } from 'context/SocketContext';
 import { useRouter } from 'next/router';
 import { useEffect, useState } from 'react';
@@ -8,27 +45,57 @@ import { isUserVerified, getVerifiedGender } from 'modules/verification';
 import MiniGames from 'components/MiniGames';
 
 export default function MatchPage() {
+  // ========================================================================
+  // HOOKS & STATE
+  // ========================================================================
+  
   const { socket, isConnected } = useSocket();
   const router = useRouter();
 
-  const [status, setStatus] = useState('idle'); // idle, searching, matched
+  // Matching state machine: idle -> searching -> matched
+  const [status, setStatus] = useState('idle');
+  
+  // Gender filter: 'any', 'male', or 'female'
   const [genderFilter, setGenderFilter] = useState('any');
+  
+  // Partner info when match is found
   const [partnerInfo, setPartnerInfo] = useState(null);
+  
+  // Freemium: remaining daily matches with gender filter
   const [remainingMatches, setRemainingMatches] = useState(5);
+  
+  // Current position in the matching queue
   const [queuePosition, setQueuePosition] = useState(null);
+  
+  // Total users currently online
   const [onlineCount, setOnlineCount] = useState(0);
+  
+  // Whether user has completed gender verification
   const [isVerified, setIsVerified] = useState(false);
+  
+  // User's verified gender (if verified)
   const [userGender, setUserGender] = useState(null);
 
-  // Check authentication and verification
+  // ========================================================================
+  // AUTHENTICATION & SOCKET SETUP
+  // ========================================================================
+  
+  /**
+   * Effect: Initialize page on mount
+   * - Verify user is logged in (redirect if not)
+   * - Check verification status
+   * - Register with socket server
+   * - Set up event listeners
+   */
   useEffect(() => {
+    // Check if user has completed setup
     const userData = getUserData();
     if (!userData) {
-      router.push('/');
+      router.push('/');  // Redirect to home if not logged in
       return;
     }
 
-    // Check verification status
+    // Check gender verification status
     const verified = isUserVerified();
     setIsVerified(verified);
     
@@ -36,8 +103,9 @@ export default function MatchPage() {
       setUserGender(getVerifiedGender());
     }
 
+    // Socket event setup
     if (socket) {
-      // Re-register with verified gender
+      // Re-register with server (includes verified gender)
       const gender = getVerifiedGender() || userData.gender || 'unspecified';
       
       socket.emit('auth:register', {
@@ -47,33 +115,35 @@ export default function MatchPage() {
         gender: gender,
       });
 
-      // Get platform stats
+      // Request platform statistics
       socket.emit('platform:stats');
       socket.on('platform:stats', (stats) => {
         setOnlineCount(stats.online || 0);
       });
 
-      // Listen for match found
+      // Handle match found event
+      // This fires when the server pairs us with another user
       socket.on('match:found', (data) => {
         setStatus('matched');
         setPartnerInfo(data.partner);
-        incrementMatchCount();
-        // Navigate to chat with session ID
+        incrementMatchCount();  // Update freemium counter
+        // Navigate to chat room with the session ID
         router.push(`/chat/${data.sessionId}`);
       });
 
-      // Listen for queue status updates
+      // Handle queue position updates
       socket.on('queue:status', (data) => {
         if (data.inQueue) {
           setQueuePosition(data.position);
         }
       });
 
-      // Poll stats
+      // Poll stats every 5 seconds for live count
       const statsInterval = setInterval(() => {
         socket.emit('platform:stats');
       }, 5000);
 
+      // Cleanup on unmount
       return () => {
         clearInterval(statsInterval);
         socket.off('match:found');
@@ -83,22 +153,37 @@ export default function MatchPage() {
     }
   }, [socket]);
 
+  /**
+   * Effect: Update remaining matches count on mount
+   */
   useEffect(() => {
     setRemainingMatches(getRemainingMatches());
   }, []);
 
+  // ========================================================================
+  // EVENT HANDLERS
+  // ========================================================================
+
+  /**
+   * Starts searching for a match.
+   * Joins the matching queue with selected gender preference.
+   */
   const handleStartSearch = () => {
     if (!socket) return;
 
     setStatus('searching');
     socket.emit('queue:join', { preferredGender: genderFilter });
 
-    // Update remaining matches if using specific filter
+    // Update remaining matches display if using specific filter
     if (genderFilter !== 'any') {
       setRemainingMatches(getRemainingMatches());
     }
   };
 
+  /**
+   * Cancels the current search.
+   * Removes user from the matching queue.
+   */
   const handleCancelSearch = () => {
     if (!socket) return;
 
@@ -106,6 +191,10 @@ export default function MatchPage() {
     socket.emit('queue:leave');
   };
 
+  /**
+   * Logs out the user.
+   * Emits logout event, clears local storage, and redirects home.
+   */
   const handleLogout = () => {
     if (socket) {
       socket.emit('auth:logout');
@@ -114,9 +203,16 @@ export default function MatchPage() {
     router.push('/');
   };
 
+  // ========================================================================
+  // RENDER
+  // ========================================================================
+
   return (
     <div className="min-h-screen bg-white relative overflow-hidden">
-      {/* Animated Background Gradients */}
+      {/* ================================================================
+          ANIMATED BACKGROUND GRADIENTS
+          Creates a dynamic, organic feel while waiting for matches
+          ================================================================ */}
       <motion.div 
         className="absolute top-[-30%] left-[-20%] w-[600px] h-[600px] bg-accent-green/25 rounded-full blur-3xl"
         animate={{ 
@@ -144,9 +240,13 @@ export default function MatchPage() {
         transition={{ duration: 8, repeat: Infinity, ease: "easeInOut", delay: 3 }}
       />
 
-      {/* Header */}
+      {/* ================================================================
+          HEADER NAVIGATION
+          Shows logo, online count, and logout button
+          ================================================================ */}
       <header className="relative z-20 glass-nav border-b border-white/20 px-6 py-4">
         <div className="max-w-6xl mx-auto flex items-center justify-between">
+          {/* Logo */}
           <motion.div 
             className="flex items-center gap-3"
             initial={{ opacity: 0, x: -20 }}
@@ -155,12 +255,16 @@ export default function MatchPage() {
             <img src="/logo.jpeg" alt="Greyroom" className="w-10 h-10 rounded-xl shadow-soft" />
             <span className="font-semibold text-text-primary">{appConfig.name}</span>
           </motion.div>
+          
+          {/* Online count and logout */}
           <div className="flex items-center gap-4">
+            {/* Live online indicator */}
             <motion.div 
               className="glass px-4 py-2 rounded-full flex items-center gap-2"
               initial={{ opacity: 0, scale: 0.9 }}
               animate={{ opacity: 1, scale: 1 }}
             >
+              {/* Pulsing green dot */}
               <motion.span 
                 className="w-2 h-2 bg-green-500 rounded-full"
                 animate={{ scale: [1, 1.2, 1] }}
@@ -168,6 +272,8 @@ export default function MatchPage() {
               />
               <span className="text-sm text-text-primary font-medium">{onlineCount} online</span>
             </motion.div>
+            
+            {/* Logout button */}
             <motion.button
               onClick={handleLogout}
               className="text-sm text-text-muted hover:text-text-primary transition-colors px-4 py-2 rounded-full hover:bg-surface"
@@ -180,13 +286,16 @@ export default function MatchPage() {
         </div>
       </header>
 
-      {/* Left Side Decorations */}
+      {/* ================================================================
+          LEFT SIDE DECORATIONS
+          Feature badges that float on large screens
+          ================================================================ */}
       <div className="hidden xl:block absolute left-12 top-1/2 -translate-y-1/2 z-10">
         <div className="space-y-4">
           {[
-            { icon: '🔒', text: 'Secure', delay: 0 },
-            { icon: '🎭', text: 'Anonymous', delay: 0.2 },
-            { icon: '⚡', text: 'Real-time', delay: 0.4 },
+            { icon: (<svg className="w-5 h-5 text-violet-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg>), text: 'Secure', delay: 0 },
+            { icon: (<svg className="w-5 h-5 text-grey-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>), text: 'Anonymous', delay: 0.2 },
+            { icon: (<svg className="w-5 h-5 text-amber-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>), text: 'Real-time', delay: 0.4 },
           ].map((tag, i) => (
             <motion.div
               key={i}
@@ -199,7 +308,7 @@ export default function MatchPage() {
                 y: { delay: 1.5 + tag.delay, duration: 3, repeat: Infinity, ease: "easeInOut" }
               }}
             >
-              <span className="text-lg">{tag.icon}</span>
+              {tag.icon}
               <span className="text-text-primary font-medium text-sm">{tag.text}</span>
             </motion.div>
           ))}
@@ -226,8 +335,8 @@ export default function MatchPage() {
         
         <div className="space-y-3">
           {[
-            { icon: '💬', text: 'Video Chat', delay: 0.8 },
-            { icon: '🌍', text: 'Worldwide', delay: 1 },
+            { icon: (<svg className="w-5 h-5 text-violet-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>), text: 'Video Chat', delay: 0.8 },
+            { icon: (<svg className="w-5 h-5 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>), text: 'Worldwide', delay: 1 },
           ].map((tag, i) => (
             <motion.div
               key={i}
@@ -240,7 +349,7 @@ export default function MatchPage() {
                 y: { delay: 1.5 + tag.delay, duration: 3.5, repeat: Infinity, ease: "easeInOut" }
               }}
             >
-              <span className="text-lg">{tag.icon}</span>
+              {tag.icon}
               <span className="text-text-primary font-medium text-sm">{tag.text}</span>
             </motion.div>
           ))}
@@ -290,14 +399,14 @@ export default function MatchPage() {
                   </label>
                   <div className="grid grid-cols-3 gap-3">
                     {[
-                      { value: 'any', label: 'Anyone', icon: '🌐' },
-                      { value: 'male', label: 'Male', icon: '👨' },
-                      { value: 'female', label: 'Female', icon: '👩' },
+                      { value: 'any', label: 'Anyone' },
+                      { value: 'male', label: 'Male' },
+                      { value: 'female', label: 'Female' },
                     ].map((option) => (
                       <motion.button
                         key={option.value}
                         onClick={() => setGenderFilter(option.value)}
-                        className={`py-3 px-3 rounded-card text-sm font-medium transition-all flex flex-col items-center gap-1 ${
+                        className={`py-4 px-4 rounded-card text-sm font-medium transition-all ${
                           genderFilter === option.value
                             ? 'bg-cta text-white shadow-cta'
                             : 'bg-surface text-text-primary hover:bg-grey-200'
@@ -305,8 +414,7 @@ export default function MatchPage() {
                         whileHover={{ scale: 1.02 }}
                         whileTap={{ scale: 0.98 }}
                       >
-                        <span className="text-lg">{option.icon}</span>
-                        <span>{option.label}</span>
+                        {option.label}
                       </motion.button>
                     ))}
                   </div>
@@ -402,7 +510,7 @@ export default function MatchPage() {
                   </svg>
                 </motion.div>
                 <h2 className="text-xl font-semibold text-text-primary mb-2">
-                  Match Found! 🎉
+                  Match Found!
                 </h2>
                 <p className="text-text-muted">
                   Connecting you with {partnerInfo?.nickname || 'a stranger'}...
