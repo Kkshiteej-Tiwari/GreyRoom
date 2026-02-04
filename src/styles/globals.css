@@ -1,19 +1,19 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap");
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 :root {
-  --bg: #FFFFFF;
-  --surface: #F6F7F7;
-  --panel-accent: #F2F6F5;
-  --text-primary: #0B0C0D;
-  --text-muted: #7A7E80;
-  --cta-bg: #0B0C0D;
-  --cta-text: #FFFFFF;
-  --accent-green: #DFF8D6;
-  --accent-blue: #D6F0FF;
+  --bg: #ffffff;
+  --surface: #f6f7f7;
+  --panel-accent: #f2f6f5;
+  --text-primary: #0b0c0d;
+  --text-muted: #7a7e80;
+  --cta-bg: #0b0c0d;
+  --cta-text: #ffffff;
+  --accent-green: #dff8d6;
+  --accent-blue: #d6f0ff;
   --shadow-soft: 0 18px 36px rgba(11, 16, 20, 0.06);
   --shadow-sm: 0 8px 20px rgba(11, 16, 20, 0.04);
   --radius-lg: 36px;
@@ -21,7 +21,7 @@
 }
 
 * {
-  font-family: 'Inter', sans-serif;
+  font-family: "Inter", sans-serif;
   box-sizing: border-box;
 }
 
@@ -75,10 +75,21 @@ body {
 /* Highlight text with gradient background */
 .highlight-text {
   display: inline-block;
-  background: linear-gradient(90deg, var(--accent-green) 0%, var(--accent-blue) 100%);
-  padding: 4px 16px;
-  border-radius: 18px;
+  background: linear-gradient(
+    90deg,
+    var(--accent-green) 0%,
+    var(--accent-blue) 100%
+  );
+  padding: 2px 10px;
+  border-radius: 12px;
   transform: skewX(-1.5deg);
+}
+
+@media (min-width: 640px) {
+  .highlight-text {
+    padding: 4px 16px;
+    border-radius: 18px;
+  }
 }
 
 /* Mobile card styling */
@@ -122,7 +133,7 @@ body {
   width: 140px;
   height: 56px;
   border-radius: 12px;
-  background: #FFFFFF;
+  background: #ffffff;
   box-shadow: var(--shadow-sm);
   display: flex;
   align-items: center;
@@ -158,7 +169,8 @@ body {
 }
 
 @keyframes pulse {
-  0%, 100% {
+  0%,
+  100% {
     opacity: 1;
   }
   50% {
@@ -180,7 +192,9 @@ body {
 }
 
 @keyframes typingBounce {
-  0%, 80%, 100% {
+  0%,
+  80%,
+  100% {
     transform: scale(0);
   }
   40% {
@@ -189,11 +203,21 @@ body {
 }
 
 /* Staggered animation helpers */
-.stagger-1 { animation-delay: 0ms; }
-.stagger-2 { animation-delay: 100ms; }
-.stagger-3 { animation-delay: 200ms; }
-.stagger-4 { animation-delay: 300ms; }
-.stagger-5 { animation-delay: 400ms; }
+.stagger-1 {
+  animation-delay: 0ms;
+}
+.stagger-2 {
+  animation-delay: 100ms;
+}
+.stagger-3 {
+  animation-delay: 200ms;
+}
+.stagger-4 {
+  animation-delay: 300ms;
+}
+.stagger-5 {
+  animation-delay: 400ms;
+}
 
 /* Premium button hover */
 .btn-premium {
@@ -207,7 +231,7 @@ body {
 
 /* Icon gradient background */
 .icon-gradient {
-  background: linear-gradient(180deg, #E9FFE9, #E6F6FF);
+  background: linear-gradient(180deg, #e9ffe9, #e6f6ff);
   border-radius: 50%;
   box-shadow: 0 6px 20px rgba(0, 0, 0, 0.06);
 }
